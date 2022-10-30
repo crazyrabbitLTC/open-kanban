@@ -3,13 +3,9 @@ pragma solidity >=0.8.4;
 
 import "hardhat/console.sol";
 import "solidity-linked-list/contracts/StructuredLinkedList.sol";
+import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 
-import "@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-
-contract DB is Initializable, AccessControlEnumerableUpgradeable, UUPSUpgradeable {
+contract DB is AccessControlEnumerable {
     using StructuredLinkedList for StructuredLinkedList.List;
 
     StructuredLinkedList.List public list;
@@ -18,7 +14,6 @@ contract DB is Initializable, AccessControlEnumerableUpgradeable, UUPSUpgradeabl
     error AccessError();
 
     // Create a new role identifier for the Database controller role
-    bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
     bytes32 public constant DB_CONTROLLER = keccak256("DB_CONTROLLER");
 
     // events
@@ -38,22 +33,9 @@ contract DB is Initializable, AccessControlEnumerableUpgradeable, UUPSUpgradeabl
         _;
     }
 
-    /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() {
-        _disableInitializers();
-    }
-
-    function initialize() public initializer {
-        __AccessControl_init();
-        __UUPSUpgradeable_init();
-
-        _grantRole(DB_CONTROLLER, msg.sender);
-        _grantRole(UPGRADER_ROLE, msg.sender);
-    }
-
-    // TODO: implement this
-    function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER_ROLE) {
-        // TODO: Who can do it? When? How?
+    constructor(address dbController) {
+        _setupRole(DEFAULT_ADMIN_ROLE, dbController);
+        _grantRole(DB_CONTROLLER, dbController);
     }
 
     // function listExists(List storage self) internal view returns (bool);
