@@ -5,7 +5,7 @@ import "hardhat/console.sol";
 import "solidity-linked-list/contracts/StructuredLinkedList.sol";
 import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 
-contract DB is AccessControlEnumerable {
+contract Database is AccessControlEnumerable {
     using StructuredLinkedList for StructuredLinkedList.List;
 
     StructuredLinkedList.List public list;

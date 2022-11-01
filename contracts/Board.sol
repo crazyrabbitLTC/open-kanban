@@ -12,7 +12,7 @@ import "@openzeppelin/contracts/token/ERC721/extensions/draft-ERC721Votes.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
 /// @custom:security-contact dennison@dennisonbertram.com
-contract MyToken is
+contract Board is
     ERC721,
     ERC721Enumerable,
     ERC721URIStorage,
@@ -30,7 +30,7 @@ contract MyToken is
     bytes32 public constant BURN_ROLE = keccak256("BURN_ROLE");
     Counters.Counter private _tokenIdCounter;
 
-    constructor(string calldata boardName, string calldata boardAbbreviation)
+    constructor(string memory boardName, string memory boardAbbreviation)
         ERC721(boardName, boardAbbreviation)
         EIP712(boardName, "1")
     {
@@ -49,11 +49,12 @@ contract MyToken is
         _unpause();
     }
 
-    function safeMint(address to, string memory uri) public onlyRole(MINTER_ROLE) {
+    function safeMint(address to, string memory uri) public onlyRole(MINTER_ROLE) returns (uint256) {
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, uri);
+        return tokenId;
     }
 
     function _beforeTokenTransfer(
