@@ -3,9 +3,10 @@ pragma solidity >=0.8.4;
 
 import "hardhat/console.sol";
 import "solidity-linked-list/contracts/StructuredLinkedList.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 
-contract Database is AccessControlEnumerable {
+contract DB is AccessControlEnumerable, Initializable {
     using StructuredLinkedList for StructuredLinkedList.List;
 
     StructuredLinkedList.List public list;
@@ -33,7 +34,7 @@ contract Database is AccessControlEnumerable {
         _;
     }
 
-    constructor(address dbController) {
+    function initialize(address dbController) public initializer {
         _setupRole(DEFAULT_ADMIN_ROLE, dbController);
         _grantRole(DB_CONTROLLER, dbController);
     }

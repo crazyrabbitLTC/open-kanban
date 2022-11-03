@@ -4,26 +4,22 @@ pragma solidity >=0.8.4;
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 import "./interfaces/IDatabase.sol";
 import "./interfaces/IBoard.sol";
 
-contract KanbanManager is AccessControlEnumerable {
+contract Manager is AccessControlEnumerable, Initializable {
     struct Ticket {
         uint256 id;
         string name;
         string uri;
-        uint256[] links;
-        uint256 column;
-        uint256 status;
-        uint256 priority;
-        uint256 estimate;
-        address assignee;
-        address reviewer;
-        address creator;
-        uint256 created;
-        uint256 updated;
+        uint256 columnId;
+        uint256 statusId;
+        bytes32 data;
     }
+    // Mapping of Tickets
+    mapping(uint256 => Ticket) public tickets;
 
     struct Kanban {
         string name;
@@ -39,9 +35,11 @@ contract KanbanManager is AccessControlEnumerable {
         string name;
         bytes32 uri;
         IDatabase database;
+        bytes32 data;
     }
     IDatabase public columns;
     mapping(uint256 => Column) public column;
+    mapping(string => uint256) public columnId;
 
     // Users
     struct User {
@@ -51,12 +49,12 @@ contract KanbanManager is AccessControlEnumerable {
     }
     mapping(address => User) public users;
 
-    // User with Role
+    // User with Role (only used for setup)
     struct UserWithRoles {
         address account;
-        bytes32 data;
         bytes32 uri;
         string[] roles;
+        bytes32 data;
     }
 
     // Statuses
@@ -65,37 +63,39 @@ contract KanbanManager is AccessControlEnumerable {
         bytes32 uri;
         bytes32 data;
     }
-    Status[] public statuses;
+    IDatabase public statuses;
+    mapping(uint256 => Status) public status;
+    // Status[] public statuses;
+    // string[] public statusLevels;
 
     // Setup
     IDatabase public dbImplementation;
     IBoard public boardImplementation;
-
-    // Status Levels
-    string[] public statusLevels;
-
-    // Mapping of Tickets
-    mapping(uint256 => Ticket) public tickets;
 
     // NFT Board
     IBoard public board;
     // DB
     IDatabase public db;
 
-    bool public isIniziialized;
-
     error TicketDoesNotExist(uint256 ticketId);
+    error TicketAlreadyInColumn(uint256 ticketId, uint256 columnId);
+    error TicketNotRemovedFromColumn(uint256 ticketId, uint256 columnId);
+    error TicketNotAddedToColumn(uint256 ticketId, uint256 columnId);
     error CallerDoesNotHaveRequiredRole();
     error OpenTicketInvalidColumn();
     error FailedToAddTicket(uint256 ticketId);
+    error InvalidColumnId(uint256 columnId);
+    error InvalidStatusId(uint256 statusId);
+    error ArrayLengthMismatch();
 
     event BoardInitalized(IBoard board, IDatabase db);
-    event ColumnAdded(string name, bytes32 uri, uint256 index, address database);
-    event TicketOpened(uint256 ticketId);
+    event TicketCreated(Ticket ticket);
     event TicketMetadataUpdated(uint256 ticketId, Ticket ticket);
+    event TicketMoved(uint256 ticketId, uint256 previousColumnId, uint256 newColumnId);
+    event ColumnCreated(string name, bytes32 uri, uint256 id, address database, bytes32 data);
     event NewRoleCreated(string role, bytes32 roleHash, address recipient);
     event UserCreated(address account, bytes32 uri, bytes32 data);
-    event StatusCreated(string name, bytes32 uri, bytes32 data, uint256 index);
+    event StatusCreated(string name, bytes32 uri, uint256 id, address database, bytes32 data);
 
     // roles - priviledged
     bytes32 public constant KANBAN_ADMIN = keccak256("KANBAN_ADMIN");
@@ -128,7 +128,7 @@ contract KanbanManager is AccessControlEnumerable {
         _;
     }
 
-    constructor(
+    function initialize(
         address _superAdmin,
         IDatabase _implementation,
         IBoard _boardImplementation,
@@ -136,7 +136,7 @@ contract KanbanManager is AccessControlEnumerable {
         Status[] memory _statusLevels,
         Column[] memory _columns,
         Kanban memory _kanban
-    ) {
+    ) public initializer {
         // database implementation
         dbImplementation = _implementation;
 
@@ -178,11 +178,18 @@ contract KanbanManager is AccessControlEnumerable {
     }
 
     function _setupStatuses(Status[] memory _statusLevels) internal {
+        statuses = IDatabase(Clones.clone(address(dbImplementation)));
+        statuses.initialize(address(this));
         for (uint256 i = 0; i < _statusLevels.length; i++) {
-            Status memory status = _statusLevels[i];
-            statuses.push(status);
-            statusLevels.push(status.name);
-            emit StatusCreated(status.name, status.uri, status.data, i);
+            status[i] = _statusLevels[i];
+            statuses.pushBack(i);
+            emit StatusCreated(
+                _statusLevels[i].name,
+                _statusLevels[i].uri,
+                i,
+                address(statuses),
+                _statusLevels[i].data
+            );
         }
     }
 
@@ -193,33 +200,84 @@ contract KanbanManager is AccessControlEnumerable {
 
     function _setupColumns(Column[] memory _columns) internal {
         columns = IDatabase(Clones.clone(address(dbImplementation)));
-
+        // initialize the database
+        columns.initialize(address(this));
         for (uint256 i = 0; i < _columns.length; i++) {
             address clone = Clones.clone(address(dbImplementation));
+            IDatabase(clone).initialize(address(this));
             uint256 columnIndex = uint256(uint160(clone));
             column[columnIndex] = _columns[i];
+            column[columnIndex].database = IDatabase(clone);
             columns.pushBack(columnIndex);
-            emit ColumnAdded(_columns[i].name, _columns[i].uri, columnIndex, clone);
+            columnId[_columns[i].name] = columnIndex;
+            emit ColumnCreated(_columns[i].name, _columns[i].uri, columnIndex, clone, _columns[i].data);
         }
     }
 
-    // function openTicket(Ticket calldata newTicket, address recipient)
-    //     public
-    //     onlyWithRoles(membersOrAdmins)
-    //     returns (bool status)
-    // {
-    //     // //require Column exists
-    //     // if (newTicket.column >= columns.length) revert OpenTicketInvalidColumn();
-    //     // // create ticket
-    //     // uint256 ticketId = board.safeMint(recipient, newTicket.uri);
-    //     // // save ticket (to the right column!)
-    //     // // if (!db.pushBack(ticketId)) revert FailedToAddTicket(ticketId);
-    //     // // update ticket
-    //     // tickets[ticketId] = newTicket;
-    //     // emit TicketOpened(ticketId);
-    //     // emit TicketMetadataUpdated(ticketId, newTicket);
-    //     // return true;
-    // }
+    function openTicket(Ticket memory ticket, address recipient) public onlyWithRoles(membersOrAdminsOrReviewers) {
+        // check if column exists
+        if (!columns.nodeExists(ticket.columnId)) {
+            revert InvalidColumnId({ columnId: ticket.columnId });
+        }
+        // check if status exists
+        if (!statuses.nodeExists(ticket.statusId)) {
+            revert InvalidStatusId({ statusId: ticket.statusId });
+        }
+        // create ticket
+        uint256 ticketId = board.safeMint(recipient, ticket.uri);
+        ticket.id = ticketId;
+        // add ticket to column
+        column[ticket.columnId].database.pushBack(ticketId);
+        emit TicketCreated(ticket);
+    }
+
+    function moveTicketsBetweenColumns(uint256[] memory ticketIds, uint256[] memory destinationColumnIds)
+        public
+        onlyWithRoles(membersOrAdminsOrReviewers)
+    {
+        if (ticketIds.length != destinationColumnIds.length) {
+            revert ArrayLengthMismatch();
+        }
+
+        for (uint256 i = 0; i < ticketIds.length; i++) {
+            _moveTicketBetweenColumns(ticketIds[i], destinationColumnIds[i]);
+        }
+    }
+
+    function _moveTicketBetweenColumns(uint256 ticketId, uint256 destinationColumnId) internal returns (bool) {
+        // check if ticket is on the board
+        if (tickets[ticketId].id == 0) {
+            revert TicketDoesNotExist({ ticketId: ticketId });
+        }
+        // check if destination column is valid
+        if (!columns.nodeExists(destinationColumnId)) {
+            revert InvalidColumnId({ columnId: destinationColumnId });
+        }
+        // get current
+        uint256 previousColumnId = tickets[ticketId].columnId;
+        // check if ticket is already in destination column
+        if (previousColumnId == destinationColumnId) {
+            revert TicketAlreadyInColumn({ ticketId: ticketId, columnId: destinationColumnId });
+        }
+        // remove ticket from current column
+        column[previousColumnId].database.remove(ticketId);
+        // verify it's been removed
+        if (column[previousColumnId].database.nodeExists(ticketId)) {
+            revert TicketNotRemovedFromColumn({ ticketId: ticketId, columnId: previousColumnId });
+        }
+        // add ticket to new column from the back
+        column[destinationColumnId].database.pushBack(ticketId);
+        // verify it's been added
+        if (!column[destinationColumnId].database.nodeExists(ticketId)) {
+            revert TicketNotAddedToColumn({ ticketId: ticketId, columnId: destinationColumnId });
+        }
+        // update ticket
+        tickets[ticketId].columnId = destinationColumnId;
+        // emit event
+        emit TicketMoved(ticketId, previousColumnId, destinationColumnId);
+        // report success
+        return true;
+    }
 
     // function closeTicket(uint256 ticketId)
     //     public

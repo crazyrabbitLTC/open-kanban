@@ -4,6 +4,8 @@ pragma solidity >=0.8.4;
 interface IDatabase {
     function listExists() external view returns (bool);
 
+    function initialize(address dbController) external;
+
     function nodeExists(uint256 _node) external view returns (bool);
 
     function sizeOf() external view returns (uint256);
