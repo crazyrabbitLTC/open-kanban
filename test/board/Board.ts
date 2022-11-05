@@ -18,8 +18,11 @@ describe("Unit tests", function () {
 
   describe("Board", function () {
     beforeEach(async function () {
-      const deployFixture = () => deployBoardFixture("Test Board", "TB");
-      const { board } = await this.loadFixture(deployFixture);
+      const { board } = await this.loadFixture(deployBoardFixture);
+      console.log("Board deployed to:", board.address);
+
+      // await board.initialize(this.signers.admin.address, "Test Board", "TB");
+
       this.board = board;
     });
 

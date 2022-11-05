@@ -14,4 +14,10 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 /// @custom:security-contact dennison@dennisonbertram.com
 interface IBoard is IERC721 {
     function safeMint(address, string memory) external returns (uint256);
+
+    function initialize(
+        address,
+        string memory,
+        string memory
+    ) external;
 }

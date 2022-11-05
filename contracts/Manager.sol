@@ -5,9 +5,19 @@ import "hardhat/console.sol";
 import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 import "./interfaces/IDatabase.sol";
-import "./interfaces/IBoard.sol";
+
+interface IBoard is IERC721 {
+    function safeMint(address, string memory) external returns (uint256);
+
+    function initialize(
+        address,
+        string memory,
+        string memory
+    ) external;
+}
 
 contract Manager is AccessControlEnumerable, Initializable {
     struct Ticket {
@@ -20,6 +30,7 @@ contract Manager is AccessControlEnumerable, Initializable {
     }
     // Mapping of Tickets
     mapping(uint256 => Ticket) public tickets;
+    Ticket[] public ticketsArray;
 
     struct Kanban {
         string name;
@@ -40,6 +51,7 @@ contract Manager is AccessControlEnumerable, Initializable {
     IDatabase public columns;
     mapping(uint256 => Column) public column;
     mapping(string => uint256) public columnId;
+    // TODO: add enumerable mapping
 
     // Users
     struct User {
@@ -195,6 +207,7 @@ contract Manager is AccessControlEnumerable, Initializable {
 
     function _setupBoard() internal {
         board = IBoard(Clones.clone(address(boardImplementation)));
+        board.initialize(address(this), "TestBoard", "TB");
         emit BoardInitalized(board, db);
     }
 
@@ -225,10 +238,14 @@ contract Manager is AccessControlEnumerable, Initializable {
         }
         // create ticket
         uint256 ticketId = board.safeMint(recipient, ticket.uri);
-        ticket.id = ticketId;
+        Ticket memory newTicket = ticket;
+        newTicket.id = ticketId;
+
+        tickets[ticketId] = newTicket;
+        ticketsArray.push(newTicket);
         // add ticket to column
-        column[ticket.columnId].database.pushBack(ticketId);
-        emit TicketCreated(ticket);
+        column[newTicket.columnId].database.pushBack(newTicket.id);
+        emit TicketCreated(newTicket);
     }
 
     function moveTicketsBetweenColumns(uint256[] memory ticketIds, uint256[] memory destinationColumnIds)

@@ -23,8 +23,7 @@ describe("Unit tests", function () {
   describe("Manager", function () {
     beforeEach(async function () {
       const formatBytes32String = ethers.utils.formatBytes32String;
-      const boardFixture = () => deployBoardFixture("Test Board", "TB");
-      const { board } = await this.loadFixture(boardFixture);
+      const { board } = await this.loadFixture(deployBoardFixture);
       const DBFixture = () => deployDBFixture(this.signers.admin.address);
       const { db } = await this.loadFixture(DBFixture);
 
