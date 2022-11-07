@@ -13,21 +13,12 @@ import type { ManagerInitParams } from "../types";
 export async function deployManagerFixture(init: ManagerInitParams): Promise<{ manager: Manager }> {
   const signers: SignerWithAddress[] = await ethers.getSigners();
   const admin: SignerWithAddress = signers[0];
-  const { superAdmin, databaseImplementation, boardImplementation, usersWithRoles, statusLevels, columns, kanban } =
-    init;
+  const { superAdmin, databaseImplementation, boardImplementation, usersWithRoles, columns, kanban } = init;
 
   const managerFactory: Manager__factory = <Manager__factory>await ethers.getContractFactory("Manager");
   const manager: Manager = <Manager>await managerFactory.connect(admin).deploy();
   await manager.deployed();
-  await manager.initialize(
-    superAdmin,
-    databaseImplementation,
-    boardImplementation,
-    usersWithRoles,
-    statusLevels,
-    columns,
-    kanban,
-  );
+  await manager.initialize(superAdmin, databaseImplementation, boardImplementation, usersWithRoles, columns, kanban);
 
   return { manager };
 }

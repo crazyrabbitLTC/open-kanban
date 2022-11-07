@@ -1,6 +1,5 @@
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { BigNumber } from "ethers";
-import { string } from "hardhat/internal/core/params/argumentTypes";
 
 import type { Board } from "../types/contracts/Board";
 import type { DB } from "../types/contracts/DB";
@@ -29,16 +28,16 @@ export interface Ticket {
   id: number;
   name: string;
   uri: string;
-  columnId: BigNumber;
-  statusId: number;
+  columnIndex: BigNumber;
   data: string;
 }
 
 export interface Column {
+  database: string;
   name: string;
   uri: string;
-  database: string;
   data: string;
+  ticketCount: BigNumber;
 }
 
 export interface Status {
@@ -66,7 +65,6 @@ export interface ManagerInitParams {
   databaseImplementation: string;
   boardImplementation: string;
   usersWithRoles: UserWithRoles[];
-  statusLevels: Status[];
   columns: Column[];
   kanban: Kanban;
 }

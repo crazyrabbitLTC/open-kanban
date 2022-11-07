@@ -6,6 +6,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol"
 import "@openzeppelin/contracts-upgradeable/governance/IGovernorUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/governance/utils/IVotesUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/IAccessControlUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 interface IBoard is IERC721Upgradeable, IAccessControlUpgradeable {
     function initialize(
@@ -27,13 +28,14 @@ interface ITicketGov {
     ) external;
 }
 
-contract TicketManager {
+contract TicketManager is Initializable {
     address[] public nftImplementationVersions;
     address[] public govImplementationVersions;
 
     error InvalidNFTImplenetation(uint256 id);
     error InvalidGovImplenetation(uint256 id);
 
+    event Initialized(address[] nftImplementationVersions, address[] govImplementationVersions);
     event NFTCreated(address indexed nft, string name, string symbol, uint256 implementation);
     event GovCreated(address indexed gov, string name, uint256 implementation);
 
@@ -67,6 +69,13 @@ contract TicketManager {
         uint256 _seconds;
         uint256 _propThreshold;
         uint256 implementationVersion;
+    }
+
+    function initialize(address nftImplementationVersion, address govImplementationVersion) public initializer {
+        nftImplementationVersions.push(nftImplementationVersion);
+        govImplementationVersions.push(govImplementationVersion);
+
+        emit Initialized(nftImplementationVersions, govImplementationVersions);
     }
 
     function createTicket(

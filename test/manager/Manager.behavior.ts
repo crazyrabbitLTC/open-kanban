@@ -11,14 +11,13 @@ export function shouldBehaveLikeManager(): void {
   });
 
   it("can open a ticket", async function () {
-    const column = await this.manager.columnId("To Do");
+    const column = await this.manager.getColumnByName("To Do");
 
     const ticket: Ticket = {
       id: 1,
       name: "Test Ticket",
       uri: "https://example.com/ticket/1",
-      columnId: column,
-      statusId: 1,
+      columnIndex: BigNumber.from(1),
       data: formatBytes32String("0x"),
     };
 
@@ -31,12 +30,12 @@ export function shouldBehaveLikeManager(): void {
       formatBytes32String("0x"),
     ];
 
-    await expect(this.manager.openTicket(ticket, this.signers.admin.address))
+    await expect(this.manager.openTickets([ticket], [this.signers.admin.address]))
       .to.emit(this.manager, "TicketCreated")
       .withArgs(storedTicket);
 
     // check the board minted an nft
-    const res = await this.manager.tickets(0);
+    const res = await this.manager.getTicketByIndex(0);
 
     expect(storedTicket[0]).equal(res[0]);
     expect(storedTicket[1]).equal(res[1]);

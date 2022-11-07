@@ -1,5 +1,6 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
+import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 
 import { deployBoardFixture } from "../board/Board.fixture";
@@ -48,40 +49,25 @@ describe("Unit tests", function () {
 
       const usersWithRoles: UserWithRoles[] = [userAdmin, userManager, userWithNoRoles];
 
-      const statusAssigned: Status = {
-        name: "Assigned",
-        uri: formatBytes32String("https://example.com/status/1"),
-        data: formatBytes32String("0x"),
-      };
-      const statusBlocked: Status = {
-        name: "Blocked",
-        uri: formatBytes32String("https://example.com/status/2"),
-        data: formatBytes32String("0x"),
-      };
-      const statusApproved: Status = {
-        name: "Approved",
-        uri: formatBytes32String("https://example.com/status/3"),
-        data: formatBytes32String("0x"),
-      };
-
-      const statusLevels: Status[] = [statusAssigned, statusBlocked, statusApproved];
-
       const columnTodo: Column = {
         name: "To Do",
         uri: formatBytes32String("https://example.com/column/1"),
         database: "0x0000000000000000000000000000000000000000",
+        ticketCount: BigNumber.from(0),
         data: formatBytes32String("0x"),
       };
       const columnInProgress: Column = {
         name: "In Progress",
         uri: formatBytes32String("https://example.com/column/2"),
         database: "0x0000000000000000000000000000000000000000",
+        ticketCount: BigNumber.from(0),
         data: formatBytes32String("0x"),
       };
       const columnDone: Column = {
         name: "Done",
         uri: formatBytes32String("https://example.com/column/3"),
         database: "0x0000000000000000000000000000000000000000",
+        ticketCount: BigNumber.from(0),
         data: formatBytes32String("0x"),
       };
 
@@ -99,7 +85,6 @@ describe("Unit tests", function () {
         databaseImplementation: db.address,
         boardImplementation: board.address,
         usersWithRoles,
-        statusLevels,
         columns,
         kanban,
       };

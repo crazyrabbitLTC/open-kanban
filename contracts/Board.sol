@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
+import "hardhat/console.sol";
+
 import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721URIStorageUpgradeable.sol";
@@ -38,7 +40,7 @@ contract Board is
     }
 
     function initialize(
-        address owner,
+        address superAdmin,
         string memory boardName,
         string memory boardSymbol
     ) public initializer {
@@ -51,11 +53,13 @@ contract Board is
         __EIP712_init(boardName, "1");
         __ERC721Votes_init();
 
-        _grantRole(DEFAULT_ADMIN_ROLE, owner);
-        _grantRole(MINTER_ROLE, owner);
-        _grantRole(PAUSER_ROLE, owner);
-        _grantRole(TRANSFER_ROLE, owner);
-        _grantRole(BURN_ROLE, owner);
+        console.log("MSG.sender on the board: %s", superAdmin);
+        _grantRole(DEFAULT_ADMIN_ROLE, superAdmin);
+        _grantRole(MINTER_ROLE, superAdmin);
+        console.log("Does it have minting role? %s", hasRole(MINTER_ROLE, superAdmin));
+        _grantRole(PAUSER_ROLE, superAdmin);
+        _grantRole(TRANSFER_ROLE, superAdmin);
+        _grantRole(BURN_ROLE, superAdmin);
     }
 
     function pause() public onlyRole(PAUSER_ROLE) {
