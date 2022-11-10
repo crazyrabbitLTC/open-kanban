@@ -18,12 +18,13 @@ describe("Unit tests", function () {
 
   describe("Board", function () {
     beforeEach(async function () {
-      const { board } = await this.loadFixture(deployBoardFixture);
-      console.log("Board deployed to:", board.address);
+      const { board, cloneMock } = await this.loadFixture(deployBoardFixture);
 
-      // await board.initialize(this.signers.admin.address, "Test Board", "TB");
+      await cloneMock.deploy(board.address);
+      const clonedBoard = await cloneMock.clone();
 
-      this.board = board;
+      this.board = board.attach(clonedBoard).connect(this.signers.admin);
+      await this.board.initialize(this.signers.admin.address, "Test Board", "TB");
     });
 
     shouldBehaveLikeBoard();

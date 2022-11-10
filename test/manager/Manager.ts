@@ -3,9 +3,7 @@ import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signe
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 
-import { deployBoardFixture } from "../board/Board.fixture";
-import { deployDBFixture } from "../db/db.fixture";
-import type { Column, Kanban, ManagerInitParams, Signers, Status, UserWithRoles } from "../types";
+import type { Column, Kanban, ManagerInitParams, Signers, UserWithRoles } from "../types";
 import { shouldBehaveLikeManager } from "./Manager.behavior";
 import { deployManagerFixture } from "./Manager.fixture";
 
@@ -24,9 +22,6 @@ describe("Unit tests", function () {
   describe("Manager", function () {
     beforeEach(async function () {
       const formatBytes32String = ethers.utils.formatBytes32String;
-      const { board } = await this.loadFixture(deployBoardFixture);
-      const DBFixture = () => deployDBFixture(this.signers.admin.address);
-      const { db } = await this.loadFixture(DBFixture);
 
       const userAdmin: UserWithRoles = {
         account: this.signers.admin.address,
@@ -82,16 +77,19 @@ describe("Unit tests", function () {
 
       const constructorArgs: ManagerInitParams = {
         superAdmin: this.signers.admin.address,
-        databaseImplementation: db.address,
-        boardImplementation: board.address,
+        databaseImplementation: "", //impelemented in fixture
+        boardImplementation: "", // implemented in fixture
         usersWithRoles,
         columns,
         kanban,
       };
 
       const deployFixture = () => deployManagerFixture(constructorArgs);
-      const { manager } = await this.loadFixture(deployFixture);
+      const { manager, db, board } = await this.loadFixture(deployFixture);
       this.manager = manager;
+
+      this.board = board;
+      this.db = db;
     });
 
     shouldBehaveLikeManager();

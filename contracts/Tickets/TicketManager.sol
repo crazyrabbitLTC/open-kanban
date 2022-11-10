@@ -23,17 +23,6 @@ contract TicketManager is ColumnManager {
         IBoard board
     ) internal returns (Ticket memory) {
         // create the ticket
-        console.log("OpenTicket: Minting MSG Sender: %s", msg.sender);
-        console.log("OpenTicket: This Calling Address: %s", address(this));
-        console.log(
-            "OpenTicket: Does msg.sender have minting role? %s",
-            board.hasRole(keccak256("MINTER_ROLE"), msg.sender)
-        );
-        console.log(
-            "OpenTicket: Does this contract it have minting role? %s",
-            board.hasRole(keccak256("MINTER_ROLE"), address(this))
-        );
-
         uint256 ticketId = board.safeMint(recipient, ticket.uri);
         Ticket memory newTicket = ticket;
         newTicket.id = ticketId;

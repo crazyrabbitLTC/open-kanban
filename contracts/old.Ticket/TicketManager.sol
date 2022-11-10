@@ -28,7 +28,7 @@ interface ITicketGov {
     ) external;
 }
 
-contract TicketManager is Initializable {
+contract TicketManagerOLD is Initializable {
     address[] public nftImplementationVersions;
     address[] public govImplementationVersions;
 

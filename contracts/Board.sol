@@ -52,14 +52,13 @@ contract Board is
         __ERC721Burnable_init();
         __EIP712_init(boardName, "1");
         __ERC721Votes_init();
-
-        console.log("MSG.sender on the board: %s", superAdmin);
-        _grantRole(DEFAULT_ADMIN_ROLE, superAdmin);
-        _grantRole(MINTER_ROLE, superAdmin);
-        console.log("Does it have minting role? %s", hasRole(MINTER_ROLE, superAdmin));
-        _grantRole(PAUSER_ROLE, superAdmin);
-        _grantRole(TRANSFER_ROLE, superAdmin);
-        _grantRole(BURN_ROLE, superAdmin);
+        _setupRole(DEFAULT_ADMIN_ROLE, superAdmin);
+        _setupRole(MINTER_ROLE, superAdmin);
+        _setupRole(PAUSER_ROLE, superAdmin);
+        _setupRole(TRANSFER_ROLE, superAdmin);
+        _setupRole(BURN_ROLE, superAdmin);
+        // setup ticket counter so there is no 0 token
+        _tokenIdCounter.increment();
     }
 
     function pause() public onlyRole(PAUSER_ROLE) {
@@ -87,7 +86,6 @@ contract Board is
     }
 
     // The following functions are overrides required by Solidity.
-
     function _afterTokenTransfer(
         address from,
         address to,

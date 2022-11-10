@@ -8,7 +8,6 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 import "./interfaces/IDatabase.sol";
 import "./interfaces/Interfaces.sol";
-// import "./Columns/ColumnManager.sol";
 import "./Tickets/TicketManager.sol";
 
 contract Manager is AccessControlEnumerable, TicketManager, Initializable {
@@ -70,7 +69,7 @@ contract Manager is AccessControlEnumerable, TicketManager, Initializable {
 
         // board implementation
         boardImplementation = _boardImplementation;
-        _setupBoard(_superAdmin);
+        _setupBoard(address(this));
 
         // Kanban details
         kanban = _kanban;
@@ -104,7 +103,6 @@ contract Manager is AccessControlEnumerable, TicketManager, Initializable {
 
     function _setupBoard(address superAdmin) internal {
         board = IBoard(Clones.clone(address(boardImplementation)));
-
         board.initialize(
             superAdmin,
             string(abi.encodePacked(address(board))),
@@ -131,7 +129,7 @@ contract Manager is AccessControlEnumerable, TicketManager, Initializable {
             }
 
             // create ticket
-            Ticket memory newTicket = _openTicket(tickets[i], recipients[i], boardImplementation);
+            Ticket memory newTicket = _openTicket(tickets[i], recipients[i], board);
 
             // add ticket to column
             _addTicketToColumn(tickets[i].columnIndex, newTicket.id);
@@ -140,6 +138,7 @@ contract Manager is AccessControlEnumerable, TicketManager, Initializable {
             _updateColumnOnTicket(tickets[i].columnIndex, newTicket.id);
 
             output[i] = newTicket;
+            emit TicketCreated(newTicket);
         }
 
         return output;
